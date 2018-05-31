@@ -137,7 +137,7 @@ def main():
     # Print a progress bar to stdout
     trainer.extend(extensions.ProgressBar())
 
-	# Write a log to comit.ml project
+    # Write a log to comit.ml project
     trainer.extend(log_cometml(experiment))
 
     if args.resume:
