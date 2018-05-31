@@ -47,6 +47,8 @@ def main():
                         help='Number of images in each mini-batch')
     parser.add_argument('--epoch', '-e', type=int, default=20,
                         help='Number of sweeps over the dataset to train')
+    parser.add_argument('--lr', '-l', type=float, default=0.001,
+                        help='Learning Rate for Optimizer')
     parser.add_argument('--frequency', '-f', type=int, default=-1,
                         help='Frequency of taking a snapshot')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
@@ -72,8 +74,12 @@ def main():
     print('')
 
     # Setup for cometml
-    experiment = Experiment(api_key=args.api, project_name=args.project)
-    experiment.log_multiple_params(vars(args))
+    experiment = Experiment(api_key=args.api, project_name=args.project,
+                            parse_args=False)
+    params = vars(args)
+    del(params['api'])
+    del(params['project'])
+    experiment.log_multiple_params(params)
 
     # Set up a neural network to train
     # Classifier reports softmax cross entropy loss and accuracy at every
@@ -86,7 +92,7 @@ def main():
         model.to_gpu()  # Copy the model to the GPU
 
     # Setup an optimizer
-    optimizer = chainer.optimizers.Adam()
+    optimizer = chainer.optimizers.Adam(alpha=args.lr)
     optimizer.setup(model)
 
     # Load the MNIST dataset
