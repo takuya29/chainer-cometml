@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+'''
+Example adapted from https://github.com/chainer/chainer/blob/master/examples/mnist/train_mnist.py
+'''
+
 import argparse
 
 import chainer
@@ -26,17 +31,14 @@ class MLP(chainer.Chain):
         return self.l3(h2)
 
 
-def log_cometml(exp):
-    @training.make_extension(trigger=(1, 'iteration'))
+def log_cometml(exp, _log_report='LogReport'):
+    @training.make_extension(trigger=(1, 'epoch'))
     def _log_exp(trainer):
-        n_iter = trainer.updater.iteration
-        for key, value in trainer.observation.items():
-            if isinstance(value, chainer.Variable):
-                exp.log_metric(name=key, value=float(value.array), step=n_iter)
-            else:
-                exp.log_metric(name=key, value=float(value), step=n_iter)
-
-        exp.log_metric(name='time', value=trainer.elapsed_time, step=n_iter)
+        log_report = trainer.get_extension(_log_report)
+        lastest_log = log_report.log[-1]
+        n_epoch = lastest_log.pop('epoch')
+        n_iter = lastest_log.pop('iteration')
+        exp.log_multiple_metrics(lastest_log, step=n_epoch)
 
     return _log_exp
 
@@ -62,9 +64,9 @@ def main():
     parser.add_argument('--noplot', dest='plot', action='store_false',
                         help='Disable PlotReport extension')
     parser.add_argument('--api', '-k', type=str, required=True,
-                        help='Your api key for comit.ml')
+                        help='Your api key for comet.ml')
     parser.add_argument('--project', '-p', type=str, default=None,
-                        help='Project name for comit.ml')
+                        help='Project name for comet.ml')
     args = parser.parse_args()
 
     print('GPU: {}'.format(args.gpu))
@@ -77,8 +79,8 @@ def main():
     experiment = Experiment(api_key=args.api, project_name=args.project,
                             parse_args=False)
     params = vars(args)
-    del(params['api'])
-    del(params['project'])
+    del (params['api'])
+    del (params['project'])
     experiment.log_multiple_params(params)
 
     # Set up a neural network to train
@@ -143,7 +145,7 @@ def main():
     # Print a progress bar to stdout
     trainer.extend(extensions.ProgressBar())
 
-    # Write a log to comit.ml project
+    # Write a log to comet.ml project
     trainer.extend(log_cometml(experiment))
 
     if args.resume:
